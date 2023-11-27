@@ -1,7 +1,7 @@
-import { applyParams, save, ActionOptions, UpdateUserActionContext } from "gadget-server";
+import { applyParams, save, ActionOptions, UpdateShopActionContext } from "gadget-server";
 
 /**
- * @param { UpdateUserActionContext } context
+ * @param { UpdateShopActionContext } context
  */
 export async function run({ params, record, logger, api, connections }) {
   applyParams(params, record);
@@ -9,7 +9,7 @@ export async function run({ params, record, logger, api, connections }) {
 };
 
 /**
- * @param { UpdateUserActionContext } context
+ * @param { UpdateShopActionContext } context
  */
 export async function onSuccess({ params, record, logger, api, connections }) {
   // Your logic goes here

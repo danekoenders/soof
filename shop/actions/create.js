@@ -1,14 +1,15 @@
-import { deleteRecord, ActionOptions, DeleteUserActionContext } from "gadget-server";
+import { applyParams, save, ActionOptions, CreateShopActionContext } from "gadget-server";
 
 /**
- * @param { DeleteUserActionContext } context
+ * @param { CreateShopActionContext } context
  */
 export async function run({ params, record, logger, api, connections }) {
-  await deleteRecord(record);
+  applyParams(params, record);
+  await save(record);
 };
 
 /**
- * @param { DeleteUserActionContext } context
+ * @param { CreateShopActionContext } context
  */
 export async function onSuccess({ params, record, logger, api, connections }) {
   // Your logic goes here
@@ -16,5 +17,5 @@ export async function onSuccess({ params, record, logger, api, connections }) {
 
 /** @type { ActionOptions } */
 export const options = {
-  actionType: "delete"
+  actionType: "create"
 };
