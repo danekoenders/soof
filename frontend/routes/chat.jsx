@@ -14,21 +14,38 @@ export default function () {
     const [threadId, setThreadId] = useState();
     const [{ data, fetching, error }, act] = useGlobalAction(api.useOpenAIAssistant);
     const [messages, setMessages] = useState([]);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [privatekey, setPrivatekey] = useState("");
+
+    // Authentication check function (to be implemented)
+    const checkAuthentication = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const privateKey = urlParams.get('privateKey');
+        setPrivatekey(privateKey);
+
+        return true;
+    };
 
     useEffect(() => {
+        setIsAuthenticated(checkAuthentication());
+    }, []);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
         async function loadWelcomeMessage() {
-        try {
-            const welcomeMessage = await API.GetChatbotResponse("hi");
-            setMessages([
-            <BotMessage key="0" text={welcomeMessage} />
-            ]);
-        } catch (error) {
-            console.error('Error loading welcome message:', error);
-        }
+            try {
+                const welcomeMessage = await API.GetChatbotResponse("hi");
+                setMessages([
+                <BotMessage key="0" text={welcomeMessage} />
+                ]);
+            } catch (error) {
+                console.error('Error loading welcome message:', error);
+            }
         }
         
         loadWelcomeMessage();
-    }, []);
+    }, [isAuthenticated]);
 
     useEffect(() => {
         if (data && data.reply) {
@@ -60,6 +77,10 @@ export default function () {
         console.error('Error sending message:', err);
         }
     };
+
+    if (!isAuthenticated) {
+        return <div>Access Denied</div>;
+    }
 
     return (
         <div className="chatbot">
