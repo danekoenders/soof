@@ -15,37 +15,21 @@ export default function () {
     const [{ data, fetching, error }, act] = useGlobalAction(api.useOpenAIAssistant);
     const [messages, setMessages] = useState([]);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [privatekey, setPrivatekey] = useState("");
+    const [chatbotId, setChatbotId] = useState("");
 
-    // Authentication check function (to be implemented)
-    const checkAuthentication = () => {
+    useEffect(() => {
+        // Extract chatbotId from URL
         const urlParams = new URLSearchParams(window.location.search);
-        const privateKey = urlParams.get('privateKey');
-        setPrivatekey(privateKey);
+        const id = urlParams.get('chatbotId');
+        setChatbotId(id);
 
-        return true;
-    };
-
-    useEffect(() => {
-        setIsAuthenticated(checkAuthentication());
-    }, []);
-
-    useEffect(() => {
-        if (!isAuthenticated) return;
-
-        async function loadWelcomeMessage() {
-            try {
-                const welcomeMessage = await API.GetChatbotResponse("hi");
-                setMessages([
-                <BotMessage key="0" text={welcomeMessage} />
-                ]);
-            } catch (error) {
-                console.error('Error loading welcome message:', error);
+        checkAuthentication().then(isAuth => {
+            setIsAuthenticated(isAuth);
+            if (isAuth) {
+                loadWelcomeMessage();
             }
-        }
-        
-        loadWelcomeMessage();
-    }, [isAuthenticated]);
+        });
+    }, []);
 
     useEffect(() => {
         if (data && data.reply) {
@@ -58,6 +42,28 @@ export default function () {
         }
     }, [data]);
 
+    function getSessionToken() {
+        return document.cookie.split('; ').find(row => row.startsWith('sessionToken='));
+    }
+
+    // Authentication check function
+    const checkAuthentication = async () => {
+        let sessionToken = getSessionToken();
+        if (!sessionToken) {
+          return false;
+        }
+        return sessionToken != null;
+    };
+
+    async function loadWelcomeMessage() {
+        try {
+            const welcomeMessage = await API.GetChatbotResponse("hi");
+            setMessages([<BotMessage key="0" text={welcomeMessage} />]);
+        } catch (error) {
+            console.error('Error loading welcome message:', error);
+        }
+    }
+
     const send = async text => {
         try {
         // Voeg direct het bericht van de gebruiker toe
@@ -69,6 +75,8 @@ export default function () {
         // Verstuur het bericht naar de server
         await act({
             ...(threadId && { threadId: threadId }),
+            chatbot: chatbotId,
+            sessionToken: getSessionToken(),
             message: text,
         });
 
