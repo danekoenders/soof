@@ -7,13 +7,19 @@ import { UseOpenAIAssistantGlobalActionContext } from "gadget-server";
 export const params = {
   threadId: { type: "string" },
   message: { type: "string" },
+  sessionToken: { type: "string" },
 };
+
 
 export async function run({ params, logger, api, connections }) {
   try {
     const assistant = await connections.openai.beta.assistants.retrieve(
       "asst_98Vs14PvAv9PIreTzZAggoYv"
     );
+
+    if (!await isValidSessionToken(params.sessionToken, api)) {
+      throw new Error("Invalid or expired session token");
+    }
 
     let threadId;
     if (params.threadId) {
@@ -60,6 +66,12 @@ export async function run({ params, logger, api, connections }) {
               tool_call_id: action.id,
               output: JSON.stringify(output),
             });
+          } else if (funcName === "fetchProductByTitle") {
+            const output = await fetchProductByTitle(params, funcArguments.title, api, logger);
+            toolsOutput.push({
+              tool_call_id: action.id,
+              output: JSON.stringify(output),
+            });
           } else {
             throw new Error("Unknown function");
           }
@@ -98,14 +110,22 @@ export async function run({ params, logger, api, connections }) {
   }
 }
 
+async function isValidSessionToken(token, api) {
+  const session = await api.chatSession.findByToken(token);
+  
+  // Check if the token is expired
+  const expirationTime = new Date(session.createdAt);
+  expirationTime.setHours(expirationTime.getHours() + 1); // Adjust this based on your expiration policy
+
+  const currentTime = new Date();
+  return currentTime <= expirationTime; // Token is valid if current time is less than or equal to expiration time
+}
+
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function fetchParcelData(id) {
-  // Simulated API call delay
-  await delay(1000);
-
   // Simulated response
   if (id !== "123") {
     return {
@@ -117,5 +137,31 @@ async function fetchParcelData(id) {
       deliveryTime: '12:00',
       address: 'Person\'s house address'
     };
+  }
+}
+
+async function fetchProductByTitle(params, title, api, logger) {
+  const session = await api.chatSession.findByToken(params.sessionToken);
+  const shopId = session.shop;
+  const shop = await api.shop.findById(shopId);
+  const shopifyId = shop.shopifyShopId;
+  try {
+      const url = `${process.env.SHOPIFY_APP_DOMAIN}/product?title=${encodeURIComponent(title)}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': process.env.SHOPIFY_APP_AUTH,
+          "X-Shopify-Shop-Id": shopifyId,
+        }
+      });
+    
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+    
+      return await response.json();
+  } catch (err) {
+    logger.error('Error fetching product: ', err);
   }
 }

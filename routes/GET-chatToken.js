@@ -1,4 +1,5 @@
 import { RouteContext } from "gadget-server";
+import { v4 as uuidv4 } from 'uuid';
 
 export default async function route({ request, reply, api, logger, connections }) {
 
@@ -15,6 +16,28 @@ export default async function route({ request, reply, api, logger, connections }
 
     // Generate a session token (implement this logic based on your needs)
     const sessionToken = generateSessionToken();
+    const chatbot = await api.chatbot.findById(chatbotId, {
+        select: {
+            id: true,
+            shop: {
+                id: true,
+            },
+        },
+    });
+
+    const chatSession = await api.chatSession.create({
+        chatbot: {
+            _link: chatbotId,
+          },
+        shop: {
+            _link: chatbot.shop?.id,
+        },
+        token: sessionToken,
+    });
+
+    if (!chatSession) {
+        return await reply.status(500).send({ error: "Internal Server Error" });
+    }
 
     // Send the token back to the client
     await reply.type("application/json").send({ token: sessionToken, chatbotId });
@@ -59,5 +82,5 @@ async function isChatbotAllowed(chatbotId, api) {
 }
 
 function generateSessionToken() {
-    return "test-token"
+    return uuidv4(); // Generates a unique UUID
 }
