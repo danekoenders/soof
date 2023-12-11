@@ -1,88 +1,121 @@
 import React, { useState, useEffect } from "react";
-import ReactDOM from "react-dom";
-import { useGlobalAction } from "@gadgetinc/react";
+import { useGlobalAction, useFindOne } from "@gadgetinc/react";
 import { api } from "../api";
 import BotMessage from "../components/chat/BotMessage";
-import UserMessage from "../components/chat/UserMessage";
 import Messages from "../components/chat/Messages";
 import Input from "../components/chat/Input";
 import API from "../components/chat/ChatbotAPI";
 import "../components/chat/styles.css";
 import Header from "../components/chat/Header";
 
-export default function () {
-    const [threadId, setThreadId] = useState();
-    const [{ data, fetching, error }, act] = useGlobalAction(api.useOpenAIAssistant);
+export default function Chat() {
+    const [threadId, setThreadId] = useState(null);
+    const [chatbotId, setChatbotId] = useState(null);
+    const [sessionToken, setSessionToken] = useState(null);
     const [messages, setMessages] = useState([]);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [chatbotId, setChatbotId] = useState("");
+
+    const [{ data: assistantData, fetching, error }, act] = useGlobalAction(api.useOpenAIAssistant);
+    const [chatbotResult] = useFindOne(api.chatbot, chatbotId);
+    const { data: chatbotData, error: chatbotError } = chatbotResult;
 
     useEffect(() => {
-        // Extract chatbotId from URL
         const urlParams = new URLSearchParams(window.location.search);
         const id = urlParams.get('chatbotId');
         setChatbotId(id);
-
-        checkAuthentication().then(isAuth => {
-            setIsAuthenticated(isAuth);
-            if (isAuth) {
-                loadWelcomeMessage();
-            }
-        });
     }, []);
+    
+    useEffect(() => {
+        if (chatbotData) {
+            // Process chatbot data and request session token from parent window
+            const domain = chatbotData.domain;
+            window.parent.postMessage('requestSessionToken', domain);
+
+            const receiveMessage = event => {
+                if (event.origin === domain) {
+                    const tokenString = event.data.sessionToken;
+                    const token = tokenString.split('=')[1]; // Extracts the token value
+
+                    setSessionToken(token);
+                    setIsAuthenticated(token != null);
+
+                    if (token) {
+                        loadWelcomeMessage();
+                    }
+                }
+            };
+
+            window.addEventListener('message', receiveMessage);
+            return () => window.removeEventListener('message', receiveMessage);
+        }
+    }, [chatbotData]);
 
     useEffect(() => {
-        if (data && data.reply) {
-        setMessages(prevMessages => [
-            ...prevMessages,
-            <BotMessage key={prevMessages.length + 1} text={data.reply} />
-        ]);
-
-        setThreadId(data.threadId);
+        if (assistantData && assistantData.threadId) {
+            setThreadId(assistantData.threadId);
         }
-    }, [data]);
+    }, [assistantData]);
 
-    function getSessionToken() {
-        return document.cookie.split('; ').find(row => row.startsWith('sessionToken='));
-    }
-
-    // Authentication check function
-    const checkAuthentication = async () => {
-        let sessionToken = getSessionToken();
-        if (!sessionToken) {
-          return false;
-        }
-        return sessionToken != null;
-    };
-
+    // Updates the message list including the welcome message with backgroundColor
     async function loadWelcomeMessage() {
         try {
-            const welcomeMessage = await API.GetChatbotResponse("hi");
-            setMessages([<BotMessage key="0" text={welcomeMessage} />]);
+            const welcomeMessage = await API.GetChatbotResponse("start", sessionToken);
+            setMessages(prevMessages => [
+                ...prevMessages,
+                {
+                    text: welcomeMessage,
+                    sender: 'bot',
+                    loading: false,
+                    backgroundColor: chatbotData.secondaryColor
+                }
+            ]);
         } catch (error) {
             console.error('Error loading welcome message:', error);
         }
     }
 
-    const send = async text => {
+    const send = async (text) => {
+        const trimmedText = text.trim();
+        if (!trimmedText) return;
+
+        const newMessages = [...messages];
+        newMessages.push({ text: trimmedText, sender: 'user', loading: false });
+
+        // Only add bot's loading message if there's no other loading message
+        if (!newMessages.some(message => message.loading)) {
+            newMessages.push({ text: '...', sender: 'bot', loading: true, backgroundColor: chatbotData.secondaryColor });
+        }
+
+        setMessages(newMessages);
+
         try {
-        // Voeg direct het bericht van de gebruiker toe
-        setMessages(prevMessages => [
-            ...prevMessages,
-            <UserMessage key={prevMessages.length + 1} text={text} />
-        ]);
+            const response = await act({
+                ...(threadId && { threadId }),
+                chatbot: chatbotId,
+                sessionToken: sessionToken,
+                message: text,
+            });
 
-        // Verstuur het bericht naar de server
-        await act({
-            ...(threadId && { threadId: threadId }),
-            chatbot: chatbotId,
-            sessionToken: getSessionToken(),
-            message: text,
-        });
+            if (response.error) {
+                console.error('Error sending message:', response.error);
+                setMessages(prevMessages => prevMessages.filter(msg => !msg.loading));
+                return;
+            }
 
-        // Het antwoord van de bot wordt toegevoegd in de useEffect die afhankelijk is van 'data'
+            // Replace the loading message with the actual reply
+            setMessages(prevMessages => {
+                const updatedMessages = prevMessages.filter(msg => !msg.loading);
+                updatedMessages.push({
+                    text: response.data.reply,
+                    sender: 'bot',
+                    loading: false,
+                    backgroundColor: chatbotData.secondaryColor
+                });
+                return updatedMessages;
+            });
         } catch (err) {
-        console.error('Error sending message:', err);
+            console.error('Error sending message:', err);
+            setMessages(prevMessages => prevMessages.filter(msg => !msg.loading));
         }
     };
 
@@ -92,9 +125,9 @@ export default function () {
 
     return (
         <div className="chatbot">
-        <Header />
-        <Messages messages={messages} />
-        <Input onSend={send} />
+            <Header backgroundColor={chatbotData?.primaryColor} />
+            <Messages messages={messages} />
+            <Input onSend={send} />
         </div>
     );
 }

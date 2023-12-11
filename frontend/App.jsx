@@ -1,6 +1,6 @@
 import { SignedInOrRedirect, SignedOut, SignedOutOrRedirect, Provider } from "@gadgetinc/react";
 import { Suspense, useEffect } from "react";
-import { Outlet, Route, RouterProvider, createBrowserRouter, createRoutesFromElements, useNavigate, Link  } from "react-router-dom";
+import { Outlet, Route, RouterProvider, createBrowserRouter, createRoutesFromElements, useNavigate, useLocation, Link  } from "react-router-dom";
 import "./App.css";
 import { api } from "./api";
 import Index from "./routes/index";
@@ -100,10 +100,26 @@ const App = () => {
 
 const Layout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Define routes that should display the header
+  const routesWithHeader = [
+    '/',
+    '/change-password',
+    '/forgot-password',
+    '/reset-password',
+    '/sign-in',
+    '/sign-up',
+    '/signed-in',
+    '/verify-email',
+  ];
+
+  // Check if the current route is in the list
+  const showHeader = routesWithHeader.includes(location.pathname);
 
   return (
     <Provider api={api} navigate={navigate} auth={window.gadgetConfig.authentication}>
-      <Header />
+      {showHeader && <Header />}
       <div className="app">
         <div className="app-content">
           <div className="main">

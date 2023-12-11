@@ -1,20 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 
-export default function BotMessage({ text }) {
-  const [isLoading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    async function loadMessage() {
-      setLoading(false);
-      setMessage(text);
-    }
-    loadMessage();
-  }, [text]);
-
-  return (
-    <div className="message-container">
-      <div className="bot-message">{isLoading ? "..." : message}</div>
-    </div>
-  );
+export default function BotMessage({ text, loading, backgroundColor }) {
+  if (loading) {
+    return (
+      <div className="message-container">
+        <div className="bot-message" style={{ backgroundColor: backgroundColor }}>
+          <div className="typing-indicator">
+            <span className="typing-indicator-dot"></span>
+            <span className="typing-indicator-dot"></span>
+            <span className="typing-indicator-dot"></span>
+          </div>
+        </div>
+      </div>
+    );
+  } else {
+    return (
+      <div className="message-container">
+        <div className="bot-message" style={{ backgroundColor: backgroundColor }}>
+          {text}
+        </div>
+      </div>
+    );
+  }
 }

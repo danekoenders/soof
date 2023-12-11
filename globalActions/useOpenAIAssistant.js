@@ -10,11 +10,10 @@ export const params = {
   sessionToken: { type: "string" },
 };
 
-
 export async function run({ params, logger, api, connections }) {
   try {
     const assistant = await connections.openai.beta.assistants.retrieve(
-      "asst_98Vs14PvAv9PIreTzZAggoYv"
+      "asst_bylI2cuXABn6HF4I80yjifqN"
     );
 
     if (!await isValidSessionToken(params.sessionToken, api)) {
@@ -53,7 +52,6 @@ export async function run({ params, logger, api, connections }) {
         isCompleted = true;
       } else if (runRetrieve.status === "requires_action") {
         const requiredActions = runRetrieve.required_action.submit_tool_outputs.tool_calls;
-        console.log(requiredActions);
 
         let toolsOutput = [];
         for (const action of requiredActions) {
@@ -87,13 +85,11 @@ export async function run({ params, logger, api, connections }) {
       }
 
       if (!isCompleted) {
-        console.log(runRetrieve.status)
         await delay(200);
       }
     }
 
     const messages = await connections.openai.beta.threads.messages.list(threadId);
-    console.log(messages.data);
     const lastMessageForRun = messages.data
       .filter(message => message.run_id === run.id && message.role === "assistant")
       .pop();
@@ -115,7 +111,7 @@ async function isValidSessionToken(token, api) {
   
   // Check if the token is expired
   const expirationTime = new Date(session.createdAt);
-  expirationTime.setHours(expirationTime.getHours() + 1); // Adjust this based on your expiration policy
+  expirationTime.setHours(expirationTime.getHours() + 1); // Session token expires in 1 hour
 
   const currentTime = new Date();
   return currentTime <= expirationTime; // Token is valid if current time is less than or equal to expiration time
@@ -126,16 +122,17 @@ function delay(ms) {
 }
 
 async function fetchParcelData(id) {
-  // Simulated response
   if (id !== "123") {
     return {
       status: 'Parcel not found, invalid id'
     };
   } else {
     return {
-      status: 'Shipment is being delivered in 2 days',
-      deliveryTime: '12:00',
-      address: 'Person\'s house address'
+      // status: 'Shipment is being delivered in 2 days',
+      // deliveryTime: '12:00',
+      // address: 'Person\'s house address', recipient: 'Person\'s name',
+      status: 'Parcel data has been sent to recipients email',
+      email: 'da...rs@gmail.com',
     };
   }
 }
