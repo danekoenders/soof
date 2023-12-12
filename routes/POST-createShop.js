@@ -1,6 +1,7 @@
 import { RouteContext } from "gadget-server";
 
 export default async function route({ request, reply, api, logger, connections }) {
+    // TODO: Create this whole function to create a shop in the database
 
     await reply.type("application/json").send();
 }

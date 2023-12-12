@@ -1,4 +1,4 @@
-import reactLogo from "../assets/react-logo.svg";
+import reactLogo from "../assets/svgs/react-logo.svg";
 
 export default function () {
   return (

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useUser, useSignOut, useFetch } from "@gadgetinc/react";
-import reactLogo from "../assets/react-logo.svg";
+import reactLogo from "../assets/svgs/react-logo.svg";
 import { api } from "../api";
-import userIcon from "../assets/default-user-icon.svg";
+import userIcon from "../assets/svgs/default-user-icon.svg";
 import { Link } from "react-router-dom";
 
 export default function () {

@@ -1,4 +1,4 @@
-import GoogleIcon from "../assets/google.svg";
+import GoogleIcon from "../assets/svgs/google.svg";
 import { useActionForm } from "@gadgetinc/react";
 import { api } from "../api";
 import { useLocation } from "react-router-dom";

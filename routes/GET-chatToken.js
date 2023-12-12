@@ -25,6 +25,8 @@ export default async function route({ request, reply, api, logger, connections }
         },
     });
 
+    const thread = await connections.openai.beta.threads.create()
+
     const chatSession = await api.chatSession.create({
         chatbot: {
             _link: chatbotId,
@@ -33,6 +35,7 @@ export default async function route({ request, reply, api, logger, connections }
             _link: chatbot.shop?.id,
         },
         token: sessionToken,
+        threadId: thread.id,
     });
 
     if (!chatSession) {

@@ -1,4 +1,4 @@
-import GoogleIcon from "../assets/google.svg";
+import GoogleIcon from "../assets/svgs/google.svg";
 import { useActionForm } from "@gadgetinc/react";
 import { api } from "../api";
 import { Link, useLocation } from "react-router-dom";
@@ -26,6 +26,9 @@ export default function () {
         </button>
         <p>
           Forgot your password? <Link to="/forgot-password">Reset password</Link>
+        </p>
+        <p>
+          Don't have an account? <Link to="/sign-up">Sign up</Link>
         </p>
       </div>
     </form>

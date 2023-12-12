@@ -63,7 +63,7 @@ function createIframe(chatbotId) {
       let iframeSrc = `{{DOMAIN}}/chat?chatbotId=${chatbotId}`;
       let iframe = document.createElement('iframe');
       iframe.src = iframeSrc;
-      iframe.style = 'width: 100%; height: 100%; border: none; border-radius: 15px;';
+      iframe.style = 'width: 100%; height: 100%; border: none; border-radius: 13px;';
       chatContainer.appendChild(iframe);
   }
 }
