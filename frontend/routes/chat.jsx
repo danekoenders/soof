@@ -14,10 +14,8 @@ export default function Chat() {
     const [sessionToken, setSessionToken] = useState(null);
     const [messages, setMessages] = useState([]);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-    const [{ data: assistantData, fetching, error }, act] = useGlobalAction(api.useOpenAIAssistant);
-    const [chatbotResult] = useFindOne(api.chatbot, chatbotId);
-    const { data: chatbotData, error: chatbotError } = chatbotResult;
+    const [{ data: assistantData, fetching: assistantFetching, error: assistantError }, act] = useGlobalAction(api.useOpenAIAssistant);
+    const [{ data: chatbotData, fetching: chatbotFetching, error: chatbotError }] = useFindOne(api.useFindOneChatbot, chatbotId);
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
